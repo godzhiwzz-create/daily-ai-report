@@ -15,22 +15,14 @@ function generateSummary(item) {
   return summary || '暂无摘要';
 }
 
-// AI 生成日报内容（需要 API Key）
+// AI 生成日报内容
 async function generateAIReport(items, byCategory) {
-  const API_URL = 'https://api.minimax.chat/v1/text/chatcompletion_pro';
-  const API_KEY = process.env.MINIMAX_API_KEY;
-  
   const today = new Date().toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     weekday: 'long'
   });
-  
-  if (!API_KEY) {
-    console.warn('⚠️ 未设置 MINIMAX_API_KEY');
-    return { content: '', date: today, hasAI: false };
-  }
   
   // 构建分类资讯（用中文标题）
   const categoryNews = Object.entries(byCategory).map(([cat, news]) => {
@@ -52,32 +44,67 @@ ${categoryNews}
 
 请生成日报正文，直接输出中文，不要额外说明。`;
 
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'abab6.5s-chat',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7
-      })
-    });
-    
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-    
-    if (content) {
-      console.log('✅ AI 摘要生成成功');
-      return { content, date: today, hasAI: true };
+  // 尝试多个 API
+  const apis = [
+    // MiniMax (首选)
+    {
+      name: 'MiniMax',
+      url: 'https://api.minimax.chat/v1/text/chatcompletion_pro',
+      key: process.env.MINIMAX_API_KEY,
+      model: 'abab6.5s-chat',
+      body: { model: 'abab6.5s-chat', messages: [{ role: 'user', content: prompt }], temperature: 0.7 }
+    },
+    // 硅基流动 (备用) - 需要用户配置
+    {
+      name: 'SiliconFlow',
+      url: 'https://api.siliconflow.cn/v1/chat/completions',
+      key: process.env.SILICONFLOW_API_KEY,
+      model: 'Qwen/Qwen2.5-7B-Instruct',
+      body: { model: 'Qwen/Qwen2.5-7B-Instruct', messages: [{ role: 'user', content: prompt }], temperature: 0.7 }
     }
-    return { content: '', date: today, hasAI: false };
-  } catch (error) {
-    console.error('❌ AI 调用失败:', error.message);
-    return { content: '', date: today, hasAI: false };
+  ];
+  
+  for (const api of apis) {
+    if (!api.key) continue;
+    
+    try {
+      console.log(`🔄 尝试 ${api.name} API...`);
+      
+      const response = await fetch(api.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${api.key}`
+        },
+        body: JSON.stringify(api.body)
+      });
+      
+      const data = await response.json();
+      
+      // 检查是否有内容
+      const content = data.choices?.[0]?.message?.content || data.reply;
+      
+      if (content) {
+        console.log(`✅ ${api.name} AI 摘要生成成功`);
+        return { content, date: today, hasAI: true };
+      }
+      
+      // 检查错误信息
+      const errorMsg = data.base_resp?.status_msg || data.error?.message || '未知错误';
+      console.log(`⚠️ ${api.name} 返回异常: ${errorMsg}`);
+      
+      // 余额不足时继续尝试下一个 API
+      if (errorMsg.includes('balance') || errorMsg.includes('insufficient')) {
+        continue;
+      }
+      
+    } catch (error) {
+      console.error(`❌ ${api.name} 调用失败:`, error.message);
+    }
   }
+  
+  console.warn('⚠️ 所有 AI API 均不可用，跳过 AI 摘要生成');
+  return { content: '', date: today, hasAI: false };
 }
 
 module.exports = { generateSummary, generateAIReport };

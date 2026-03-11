@@ -8,53 +8,39 @@ const parser = new Parser({
   }
 });
 
-// 简单翻译（关键词替换）
-function simpleTranslate(title) {
-  if (!title) return title;
+// Google Translate API 翻译
+async function translateToChinese(text) {
+  if (!text) return text;
   
-  const translations = {
-    'AI': '人工智能',
-    'GPT': 'GPT',
-    'ChatGPT': 'ChatGPT',
-    'Claude': 'Claude',
-    'LLM': '大语言模型',
-    'machine learning': '机器学习',
-    'computer vision': '计算机视觉',
-    'autonomous': '自动驾驶',
-    'self-driving': '自动驾驶',
-    'Tesla': '特斯拉',
-    'Apple': '苹果',
-    'Google': '谷歌',
-    'Microsoft': '微软',
-    'Meta': 'Meta',
-    'Samsung': '三星',
-    'Huawei': '华为',
-    'OpenAI': 'OpenAI',
-    'Anthropic': 'Anthropic',
-    'launch': '发布',
-    'release': '发布',
-    'new': '新',
-    'update': '更新',
-    'review': '评测',
-    'how to': '如何',
-    'best': '最佳',
-    'top': '顶级',
-    '2025': '2025',
-    '2026': '2026',
-  };
+  try {
+    const encodedText = encodeURIComponent(text);
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=${encodedText}`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    if (data && data[0]) {
+      return data[0].map(item => item[0]).join('');
+    }
+    return text;
+  } catch (error) {
+    console.error('翻译失败:', error.message);
+    return simpleTranslate(text); // 回退到简单翻译
+  }
+}
+
+// 批量翻译
+async function translateItems(items) {
+  console.log('🌐 翻译标题中...\n');
   
-  let result = title;
-  for (const [en, cn] of Object.entries(translations)) {
-    result = result.replace(new RegExp(en, 'gi'), cn);
+  // 逐个翻译，避免请求过快
+  for (const item of items) {
+    item.titleCn = await translateToChinese(item.title);
+    // 添加小延迟避免限流
+    await new Promise(r => setTimeout(r, 100));
   }
   
-  // 如果没有变化，说明没有关键词，就翻译整个标题
-  if (result === title) {
-    // 简单处理：把每个单词首字母大写改成中文
-    return result;
-  }
-  
-  return result;
+  console.log('✅ 翻译完成\n');
 }
 
 // 抓取 RSS 源
@@ -157,10 +143,7 @@ async function collect() {
   }
   
   // 翻译标题
-  console.log('🌐 翻译标题中...\n');
-  for (const item of filtered) {
-    item.titleCn = simpleTranslate(item.title);
-  }
+  await translateItems(filtered);
   
   // 分类
   filtered = filtered.map(item => ({
