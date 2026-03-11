@@ -5,11 +5,13 @@ on:
     # 每天 UTC 0:00 = 北京时间 8:00
     - cron: '0 0 * * *'
   workflow_dispatch:
+  push:
 
 jobs:
   generate:
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,8 +30,8 @@ jobs:
           MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
         run: npm run generate
         
-      - name: Commit and push
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          commit_message: "📊 Auto-update daily report $(date +%Y-%m-%d)"
-          file_pattern: "dist/*.html"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
