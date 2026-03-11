@@ -1,11 +1,16 @@
 const config = require('../config');
 
-// 生成摘要
+// 生成中文摘要
 function generateSummary(item) {
-  // 如果有内容，提取前100个字符作为摘要
+  // 如果有标题翻译，用翻译后的标题
+  if (item.titleCn) {
+    return item.titleCn;
+  }
+  
+  // 如果没有，提取内容前100个字符
   let summary = item.content?.replace(/<[^>]+>/g, '').trim() || '';
-  if (summary.length > 120) {
-    summary = summary.substring(0, 120) + '...';
+  if (summary.length > 100) {
+    summary = summary.substring(0, 100) + '...';
   }
   return summary || '暂无摘要';
 }
@@ -23,13 +28,13 @@ async function generateAIReport(items, byCategory) {
   });
   
   if (!API_KEY) {
-    console.warn('⚠️ 未设置 MINIMAX_API_KEY，使用默认模板');
+    console.warn('⚠️ 未设置 MINIMAX_API_KEY');
     return { content: '', date: today, hasAI: false };
   }
   
-  // 构建分类资讯
+  // 构建分类资讯（用中文标题）
   const categoryNews = Object.entries(byCategory).map(([cat, news]) => {
-    const list = news.slice(0, 5).map((n, i) => `${i + 1}. ${n.title}`).join('\n');
+    const list = news.slice(0, 5).map((n, i) => `${i + 1}. ${n.titleCn || n.title}`).join('\n');
     return `【${cat}】\n${list}`;
   }).join('\n\n');
   
@@ -65,6 +70,7 @@ ${categoryNews}
     const content = data.choices?.[0]?.message?.content;
     
     if (content) {
+      console.log('✅ AI 摘要生成成功');
       return { content, date: today, hasAI: true };
     }
     return { content: '', date: today, hasAI: false };
