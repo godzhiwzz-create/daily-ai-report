@@ -1,14 +1,19 @@
 const config = require('../config');
 
-// AI 生成日报内容
-async function generateReport(items) {
+// 生成摘要
+function generateSummary(item) {
+  // 如果有内容，提取前100个字符作为摘要
+  let summary = item.content?.replace(/<[^>]+>/g, '').trim() || '';
+  if (summary.length > 120) {
+    summary = summary.substring(0, 120) + '...';
+  }
+  return summary || '暂无摘要';
+}
+
+// AI 生成日报内容（需要 API Key）
+async function generateAIReport(items, byCategory) {
   const API_URL = 'https://api.minimax.chat/v1/text/chatcompletion_pro';
   const API_KEY = process.env.MINIMAX_API_KEY;
-  
-  if (!API_KEY) {
-    console.warn('⚠️ 未设置 MINIMAX_API_KEY，使用默认模板');
-    return generateDefaultTemplate(items);
-  }
   
   const today = new Date().toLocaleDateString('zh-CN', {
     year: 'numeric',
@@ -17,23 +22,30 @@ async function generateReport(items) {
     weekday: 'long'
   });
   
-  const newsList = items.map((item, i) => {
-    return `${i + 1}. **${item.title}**\n   - 来源: ${item.source}\n   - 链接: ${item.link}`;
+  if (!API_KEY) {
+    console.warn('⚠️ 未设置 MINIMAX_API_KEY，使用默认模板');
+    return { content: '', date: today, hasAI: false };
+  }
+  
+  // 构建分类资讯
+  const categoryNews = Object.entries(byCategory).map(([cat, news]) => {
+    const list = news.slice(0, 5).map((n, i) => `${i + 1}. ${n.title}`).join('\n');
+    return `【${cat}】\n${list}`;
   }).join('\n\n');
   
-  const prompt = `你是一个科技日报编辑。请根据以下今日 AI 科技资讯，生成一份优雅的中文日报。
+  const prompt = `你是一个科技日报编辑。请根据以下今日资讯，生成一份优雅的中文日报。
 
 ## 要求：
 1. 开头用一句精炼的导语概括今日焦点
-2. 将资讯分类整理（每个类别 2-4 条）
+2. 按分类描述（AI大模型、机器视觉、科技前沿、商业动态等）
 3. 每条资讯用一句话简介
 4. 结尾可以加一句简短的行业观察
-5. 保持阅读体验流畅，不要列表堆砌
+5. 保持阅读体验流畅
 
 ## 今日资讯：
-${newsList}
+${categoryNews}
 
-请生成日报正文，直接输出，不要额外说明。`;
+请生成日报正文，直接输出中文，不要额外说明。`;
 
   try {
     const response = await fetch(API_URL, {
@@ -53,38 +65,13 @@ ${newsList}
     const content = data.choices?.[0]?.message?.content;
     
     if (content) {
-      return { content, date: today };
-    } else {
-      console.error('❌ AI 返回为空');
-      return generateDefaultTemplate(items);
+      return { content, date: today, hasAI: true };
     }
+    return { content: '', date: today, hasAI: false };
   } catch (error) {
     console.error('❌ AI 调用失败:', error.message);
-    return generateDefaultTemplate(items);
+    return { content: '', date: today, hasAI: false };
   }
 }
 
-// 默认模板（无 API 时使用）
-function generateDefaultTemplate(items) {
-  const today = new Date().toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long'
-  });
-  
-  const newsList = items.map(item => {
-    return `<article class="news-item">
-      <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
-      <p class="meta">${item.source}</p>
-    </article>`;
-  }).join('\n');
-  
-  return {
-    content: newsList,
-    date: today,
-    isDefault: true
-  };
-}
-
-module.exports = { generateReport };
+module.exports = { generateSummary, generateAIReport };

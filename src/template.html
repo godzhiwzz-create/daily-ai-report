@@ -7,162 +7,354 @@
   <meta name="description" content="每日 AI 科技资讯日报">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #faf9f7;
-      --card-bg: #ffffff;
-      --text: #2c2c2c;
-      --text-secondary: #666;
-      --accent: #e85d04;
-      --border: #e8e6e3;
-      --shadow: 0 2px 8px rgba(0,0,0,0.04);
+      --bg: #0a0a0b;
+      --card-bg: #16161a;
+      --card-hover: #1c1c22;
+      --text: #e8e6e3;
+      --text-secondary: #8b8b8d;
+      --accent: #ff6b35;
+      --accent-gradient: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+      --border: #2a2a2e;
+      --shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
     
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
     body {
-      font-family: 'Inter', -apple-system, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.7;
       min-height: 100vh;
+      background-image: 
+        radial-gradient(ellipse at 20% 0%, rgba(255,107,53,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(247,147,30,0.06) 0%, transparent 50%);
     }
     
     .container {
-      max-width: 720px;
+      max-width: 1100px;
       margin: 0 auto;
       padding: 48px 24px;
     }
     
+    /* Header */
     header {
       text-align: center;
       margin-bottom: 48px;
-      padding-bottom: 32px;
+      padding-bottom: 40px;
       border-bottom: 1px solid var(--border);
     }
     
-    .badge {
-      display: inline-block;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: var(--accent);
-      margin-bottom: 16px;
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--accent-gradient);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+      color: white;
+      font-family: 'JetBrains Mono', monospace;
     }
     
     h1 {
       font-family: 'Noto Serif SC', serif;
-      font-size: 32px;
+      font-size: 36px;
       font-weight: 600;
-      margin-bottom: 8px;
+      letter-spacing: -0.5px;
     }
     
     .date {
       color: var(--text-secondary);
       font-size: 14px;
+      margin-top: 8px;
     }
     
-    .content {
-      font-size: 16px;
-    }
-    
-    .content h2 {
-      font-family: 'Noto Serif SC', serif;
-      font-size: 20px;
-      margin: 32px 0 16px;
-      color: var(--text);
-    }
-    
-    .content h3 {
-      font-size: 16px;
-      font-weight: 600;
-      margin: 24px 0 8px;
-    }
-    
-    .content p {
-      margin-bottom: 12px;
-    }
-    
-    .content a {
-      color: var(--accent);
-      text-decoration: none;
-    }
-    
-    .content a:hover {
-      text-decoration: underline;
-    }
-    
-    .content ul, .content ol {
-      margin: 12px 0;
-      padding-left: 24px;
-    }
-    
-    .content li {
-      margin-bottom: 8px;
-    }
-    
-    .news-list {
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
       margin-top: 24px;
     }
     
-    .news-item {
-      background: var(--card-bg);
-      padding: 20px;
+    .stat {
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    /* AI Summary */
+    .ai-summary {
+      background: linear-gradient(135deg, rgba(255,107,53,0.1) 0%, rgba(247,147,30,0.05) 100%);
+      border: 1px solid rgba(255,107,53,0.2);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 48px;
+    }
+    
+    .ai-summary h2 {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 18px;
       margin-bottom: 16px;
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      transition: transform 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     
-    .news-item:hover {
-      transform: translateY(-2px);
+    .ai-badge {
+      background: var(--accent-gradient);
+      color: white;
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
     }
     
-    .news-item h3 {
-      font-size: 16px;
-      margin-bottom: 8px;
+    .ai-summary p {
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.8;
     }
     
-    .news-item h3 a {
+    /* Tabs */
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .tab-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .tab-btn:hover {
+      border-color: var(--accent);
       color: var(--text);
     }
     
-    .news-item .meta {
+    .tab-btn.active {
+      background: var(--accent-gradient);
+      border-color: transparent;
+      color: white;
+    }
+    
+    .tab-btn .count {
+      background: rgba(255,255,255,0.2);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    
+    .tab-btn.active .count {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    /* Tab Content */
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* News Grid */
+    .news-grid {
+      display: grid;
+      gap: 20px;
+    }
+    
+    .news-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      transition: all 0.3s ease;
+    }
+    
+    .news-card:hover {
+      border-color: rgba(255,107,53,0.4);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+    
+    .card-image {
+      width: 200px;
+      min-height: 160px;
+      background-size: cover;
+      background-position: center;
+      background-color: var(--card-hover);
+      flex-shrink: 0;
+    }
+    
+    .card-content {
+      padding: 20px 24px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .card-content h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+    
+    .card-content h3 a {
+      color: var(--text);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    .card-content h3 a:hover {
+      color: var(--accent);
+    }
+    
+    .card-content .summary {
+      color: var(--text-secondary);
+      font-size: 13px;
+      flex: 1;
+      line-height: 1.6;
+    }
+    
+    .card-content .meta {
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
       font-size: 12px;
       color: var(--text-secondary);
     }
     
+    .card-content .meta .source {
+      color: var(--accent);
+    }
+    
+    /* Footer */
     footer {
       margin-top: 64px;
-      padding-top: 24px;
+      padding-top: 32px;
       border-top: 1px solid var(--border);
       text-align: center;
       color: var(--text-secondary);
       font-size: 13px;
     }
     
-    @media (max-width: 600px) {
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
       .container { padding: 32px 16px; }
-      h1 { font-size: 26px; }
+      h1 { font-size: 28px; }
+      .stats { gap: 20px; }
+      .news-card { flex-direction: column; }
+      .card-image { width: 100%; height: 180px; }
+      .tabs { justify-content: center; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <span class="badge">Daily Report</span>
-      <h1>AI 科技日报</h1>
+      <div class="logo">
+        <div class="logo-icon">AI</div>
+        <h1>AI 科技日报</h1>
+      </div>
       <p class="date">{{date}}</p>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value">{{totalCount}}</div>
+          <div class="stat-label">今日资讯</div>
+        </div>
+      </div>
     </header>
     
-    <main class="content">
-      {{content}}
+    {{#aiContent}}
+    <section class="ai-summary">
+      <h2>今日要闻 <span class="ai-badge">AI 摘要</span></h2>
+      <p>{{aiContent}}</p>
+    </section>
+    {{/aiContent}}
+    
+    <nav class="tabs">
+      {{categoryTabs}}
+    </nav>
+    
+    <main>
+      {{categoryContents}}
     </main>
     
     <footer>
       <p>由 AI 自动生成 · 每天 8:00 更新</p>
+      <p style="margin-top: 8px;"><a href="https://github.com/godzhiwzz-create/daily-ai-report">GitHub</a> · 归档数据</p>
     </footer>
   </div>
+  
+  <script>
+    // Tab 切换
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        // 更新按钮状态
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // 更新内容显示
+        const category = btn.dataset.category;
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.classList.remove('active');
+          if (content.dataset.category === category) {
+            content.classList.add('active');
+          }
+        });
+      });
+    });
+  </script>
 </body>
 </html>
