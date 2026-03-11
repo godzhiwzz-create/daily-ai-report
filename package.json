@@ -1,0 +1,19 @@
+{
+  "name": "daily-ai-report",
+  "version": "1.0.0",
+  "description": "每日 AI 科技日报自动生成器",
+  "scripts": {
+    "generate": "node src/generate.js",
+    "preview": "npx serve dist",
+    "deploy": "npx gh-pages -d dist"
+  },
+  "dependencies": {
+    "rss-parser": "^3.13.0",
+    "dotenv": "^16.3.1",
+    "turndown": "^7.1.2"
+  },
+  "devDependencies": {
+    "serve": "^14.2.1",
+    "gh-pages": "^6.1.1"
+  }
+}

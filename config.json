@@ -1,0 +1,11 @@
+{
+  "topics": ["AI", "人工智能", "Machine Learning", "机器视觉", "Computer Vision", "LLM", "大模型", "GPT", "Claude", "自动驾驶"],
+  "rssSources": [
+    "https://feeds.feedburner.com/TechCrunch/",
+    "https://www.theverge.com/rss/index.xml",
+    "https://wired.com/feed/rss",
+    "http://feeds.bbci.co.uk/news/technology/rss.xml"
+  ],
+  "maxItems": 15,
+  "outputDir": "./dist"
+}
