@@ -2,11 +2,24 @@ const Parser = require('rss-parser');
 const config = require('../config');
 
 const parser = new Parser({
-  timeout: 10000,
+  timeout: 15000,
   headers: { 
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
   }
 });
+
+// 重试机制
+async function withRetry(fn, retries = 3, delay = 1000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      console.log(`   ⏳ 重试 ${i + 1}/${retries}...`);
+      await new Promise(r => setTimeout(r, delay * (i + 1)));
+    }
+  }
+}
 
 // Google Translate API 翻译
 async function translateToChinese(text) {
@@ -29,15 +42,21 @@ async function translateToChinese(text) {
   }
 }
 
-// 批量翻译
+// 批量翻译 - 并行化
 async function translateItems(items) {
   console.log('🌐 翻译标题中...\n');
   
-  // 逐个翻译，避免请求过快
-  for (const item of items) {
-    item.titleCn = await translateToChinese(item.title);
-    // 添加小延迟避免限流
-    await new Promise(r => setTimeout(r, 100));
+  // 并行翻译，每批5个，避免过快
+  const batchSize = 5;
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    await Promise.all(batch.map(async (item) => {
+      item.titleCn = await translateToChinese(item.title);
+    }));
+    // 批次间延迟
+    if (i + batchSize < items.length) {
+      await new Promise(r => setTimeout(r, 300));
+    }
   }
   
   console.log('✅ 翻译完成\n');
@@ -115,17 +134,22 @@ function deduplicate(items) {
   });
 }
 
-// 主函数
+// 主函数 - 并行抓取
 async function collect() {
-  console.log('📡 开始收集资讯...\n');
-  const allItems = [];
+  console.log('📡 开始并行收集资讯...\n');
   
-  for (const source of config.rssSources) {
+  // 并行抓取所有 RSS 源
+  const fetchPromises = config.rssSources.map(async (source) => {
     console.log(`🔄 抓取: ${source}`);
-    const items = await fetchRSS(source);
-    allItems.push(...items);
-    console.log(`   ✅ 获取 ${items.length} 条\n`);
-  }
+    const items = await withRetry(() => fetchRSS(source));
+    console.log(`   ✅ 获取 ${items.length} 条`);
+    return items;
+  });
+  
+  const results = await Promise.all(fetchPromises);
+  const allItems = results.flat();
+  
+  console.log(`\n📊 共获取 ${allItems.length} 条原始资讯\n`);
   
   let filtered = filterByTopics(allItems, config.topics);
   filtered = deduplicate(filtered);

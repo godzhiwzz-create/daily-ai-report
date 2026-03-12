@@ -44,7 +44,7 @@ ${categoryNews}
 
 请生成日报正文，直接输出中文，不要额外说明。`;
 
-  // 尝试多个 API
+  // 多API配置 - 优先级排序
   const apis = [
     // MiniMax (首选)
     {
@@ -54,13 +54,29 @@ ${categoryNews}
       model: 'abab6.5s-chat',
       body: { model: 'abab6.5s-chat', messages: [{ role: 'user', content: prompt }], temperature: 0.7 }
     },
-    // 硅基流动 (备用) - 需要用户配置
+    // 硅基流动 Qwen (备用1)
     {
-      name: 'SiliconFlow',
+      name: 'SiliconFlow(Qwen)',
       url: 'https://api.siliconflow.cn/v1/chat/completions',
       key: process.env.SILICONFLOW_API_KEY,
       model: 'Qwen/Qwen2.5-7B-Instruct',
       body: { model: 'Qwen/Qwen2.5-7B-Instruct', messages: [{ role: 'user', content: prompt }], temperature: 0.7 }
+    },
+    // 硅基流动 DeepSeek (备用2)
+    {
+      name: 'SiliconFlow(DeepSeek)',
+      url: 'https://api.siliconflow.cn/v1/chat/completions',
+      key: process.env.SILICONFLOW_API_KEY,
+      model: 'deepseek-ai/DeepSeek-V2-Chat',
+      body: { model: 'deepseek-ai/DeepSeek-V2-Chat', messages: [{ role: 'user', content: prompt }], temperature: 0.7 }
+    },
+    // 通义千问 API (备用3)
+    {
+      name: 'DashScope',
+      url: 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation',
+      key: process.env.DASHSCOPE_API_KEY,
+      model: 'qwen-turbo',
+      body: { model: 'qwen-turbo', input: { messages: [{ role: 'user', content: prompt }] }, parameters: { temperature: 0.7 } }
     }
   ];
   
@@ -70,31 +86,51 @@ ${categoryNews}
     try {
       console.log(`🔄 尝试 ${api.name} API...`);
       
-      const response = await fetch(api.url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${api.key}`
-        },
-        body: JSON.stringify(api.body)
-      });
+      let response, data;
       
-      const data = await response.json();
-      
-      // 检查是否有内容
-      const content = data.choices?.[0]?.message?.content || data.reply;
-      
-      if (content) {
-        console.log(`✅ ${api.name} AI 摘要生成成功`);
-        return { content, date: today, hasAI: true };
+      if (api.name === 'DashScope') {
+        // 阿里云 DashScope 特殊格式
+        response = await fetch(api.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${api.key}`
+          },
+          body: JSON.stringify(api.body)
+        });
+        data = await response.json();
+        const content = data?.output?.text || data?.output?.choices?.[0]?.message?.content;
+        if (content) {
+          console.log(`✅ ${api.name} AI 摘要生成成功`);
+          return { content, date: today, hasAI: true, api: api.name };
+        }
+      } else {
+        response = await fetch(api.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${api.key}`
+          },
+          body: JSON.stringify(api.body)
+        });
+        
+        data = await response.json();
+        
+        // 检查是否有内容
+        const content = data.choices?.[0]?.message?.content || data.reply;
+        
+        if (content) {
+          console.log(`✅ ${api.name} AI 摘要生成成功`);
+          return { content, date: today, hasAI: true, api: api.name };
+        }
       }
       
       // 检查错误信息
-      const errorMsg = data.base_resp?.status_msg || data.error?.message || '未知错误';
+      const errorMsg = data.base_resp?.status_msg || data.error?.message || data.message || '未知错误';
       console.log(`⚠️ ${api.name} 返回异常: ${errorMsg}`);
       
       // 余额不足时继续尝试下一个 API
-      if (errorMsg.includes('balance') || errorMsg.includes('insufficient')) {
+      if (errorMsg.includes('balance') || errorMsg.includes('insufficient') || errorMsg.includes('quota')) {
         continue;
       }
       
@@ -104,7 +140,7 @@ ${categoryNews}
   }
   
   console.warn('⚠️ 所有 AI API 均不可用，跳过 AI 摘要生成');
-  return { content: '', date: today, hasAI: false };
+  return { content: '', date: today, hasAI: false, api: null };
 }
 
 module.exports = { generateSummary, generateAIReport };
